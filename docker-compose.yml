@@ -11,17 +11,18 @@ services:
       - ./api:/app/api
       - ./api_keys.json:/app/api_keys.json:ro
     environment:
-      - PORT=8000
-      - HOST=0.0.0.0
-      - LOG_LEVEL=info
-      - API_KEYS_FILE=api_keys.json
-      - DATA_FILE=all.json
-      - REQUIRE_API_KEY=true
-      - RATE_LIMIT=100/minute
-      - IP_RATE_LIMIT=1000/hour
-      - CORS_ORIGINS=*
+      - PORT=${PORT:-8000}
+      - HOST=${HOST:-0.0.0.0}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - API_KEYS_FILE=${API_KEYS_FILE:-api_keys.json}
+      - DATA_FILE=${DATA_FILE:-all.json}
+      - REQUIRE_API_KEY=${REQUIRE_API_KEY:-true}
+      - RATE_LIMIT=${RATE_LIMIT:-100/minute}
+      - IP_RATE_LIMIT=${IP_RATE_LIMIT:-1000/hour}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
     restart: unless-stopped
     networks:
+      - default
       - seda-net
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
