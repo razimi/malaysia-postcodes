@@ -1,0 +1,16 @@
+{
+  "keys": [
+    {
+      "key": "your-api-key-here",
+      "name": "Example Client",
+      "created": "2026-01-01T00:00:00",
+      "rate_limit": "100/minute"
+    },
+    {
+      "key": "premium-api-key-here",
+      "name": "Premium Client",
+      "created": "2026-01-01T00:00:00",
+      "rate_limit": "1000/minute"
+    }
+  ]
+}

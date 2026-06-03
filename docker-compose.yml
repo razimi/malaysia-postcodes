@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: malaysia-postcodes-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount for development hot-reload
+      - ./api:/app/api
+      - ./api_keys.json:/app/api_keys.json:ro
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - LOG_LEVEL=info
+      - API_KEYS_FILE=api_keys.json
+      - DATA_FILE=all.json
+      - RATE_LIMIT=100/minute
+      - CORS_ORIGINS=*
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
