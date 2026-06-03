@@ -16,6 +16,7 @@ services:
       - LOG_LEVEL=info
       - API_KEYS_FILE=api_keys.json
       - DATA_FILE=all.json
+      - REQUIRE_API_KEY=true
       - RATE_LIMIT=100/minute
       - IP_RATE_LIMIT=1000/hour
       - CORS_ORIGINS=*

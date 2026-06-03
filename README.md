@@ -110,16 +110,16 @@ This repository now includes a **REST API** for programmatic access to Malaysia 
 
 ### API Endpoints
 
-All endpoints except `/` and `/health` require authentication via `X-API-Key` header.
+**Note:** Authentication requirements depend on the `REQUIRE_API_KEY` setting (default: true).
 
-#### Public Endpoints
+#### Always Public Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/` | API information |
 | GET | `/health` | Health check |
 
-#### Protected Endpoints (Require API Key)
+#### Protected Endpoints (Require API Key if REQUIRE_API_KEY=true)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -154,7 +154,28 @@ curl -H "X-API-Key: YOUR_API_KEY" "http://localhost:8000/search?q=Kuala"
 
 ### Authentication
 
-The API uses API key authentication via the `X-API-Key` header. 
+The API supports optional API key authentication via the `X-API-Key` header.
+
+**Enable/Disable Authentication:**
+
+Set the `REQUIRE_API_KEY` environment variable in `docker-compose.yml`:
+
+```yaml
+environment:
+  - REQUIRE_API_KEY=true   # Enable API key authentication (default)
+  # OR
+  - REQUIRE_API_KEY=false  # Disable authentication (IP rate limiting only)
+```
+
+**When Authentication is ENABLED (`REQUIRE_API_KEY=true`):**
+- All endpoints except `/` and `/health` require a valid API key
+- Rate limiting applies per-API-key and per-IP
+- Generate keys using the key generator
+
+**When Authentication is DISABLED (`REQUIRE_API_KEY=false`):**
+- All endpoints are publicly accessible (no API key required)
+- Only IP-based rate limiting applies
+- Useful for internal/private deployments
 
 **Generate a new API key:**
 ```bash
@@ -239,6 +260,9 @@ Environment variables (see `.env.example`):
 | `HOST` | 0.0.0.0 | Server host |
 | `LOG_LEVEL` | info | Logging level |
 | `API_KEYS_FILE` | api_keys.json | Path to API keys file |
+| `REQUIRE_API_KEY` | true | Enable/disable API key authentication |
+| `RATE_LIMIT` | 100/minute | Default rate limit per API key |
+| `IP_RATE_LIMIT` | 1000/hour | IP-based rate limit (empty to disable) |
 | `CORS_ORIGINS` | * | Allowed CORS origins |
 
 ### Deployment

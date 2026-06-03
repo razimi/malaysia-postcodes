@@ -4,7 +4,7 @@ FastAPI application with authentication and rate limiting.
 """
 
 import os
-from typing import List
+from typing import List, Optional
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Depends, Request, status
@@ -81,6 +81,14 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# Middleware to remove server header
+@app.middleware("http")
+async def remove_server_header(request: Request, call_next):
+    """Remove server identification header for security."""
+    response = await call_next(request)
+    response.headers["Server"] = ""
+    return response
+
 # CORS middleware
 cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
@@ -150,11 +158,11 @@ async def health_check(request: Request):
 )
 async def list_states(
     request: Request,
-    api_key: str = Depends(verify_api_key)
+    api_key: Optional[str] = Depends(verify_api_key)
 ):
     """List all states with summary information."""
     # Check rate limit for this specific API key
-    await check_api_rate_limit(request, api_key)
+    await check_api_rate_limit(api_key, request)
     
     data = get_postcode_data()
     return data.get_all_states()
@@ -175,11 +183,11 @@ async def list_states(
 async def get_state(
     state_name: str,
     request: Request,
-    api_key: str = Depends(verify_api_key)
+    api_key: Optional[str] = Depends(verify_api_key)
 ):
     """Get state details by name."""
     # Check rate limit for this specific API key
-    await check_api_rate_limit(request, api_key)
+    await check_api_rate_limit(api_key, request)
     
     data = get_postcode_data()
     state = data.get_state(state_name)
@@ -208,11 +216,11 @@ async def get_state(
 async def list_cities_in_state(
     state_name: str,
     request: Request,
-    api_key: str = Depends(verify_api_key)
+    api_key: Optional[str] = Depends(verify_api_key)
 ):
     """List all cities in a state."""
     # Check rate limit for this specific API key
-    await check_api_rate_limit(request, api_key)
+    await check_api_rate_limit(api_key, request)
     
     data = get_postcode_data()
     cities = data.get_cities_in_state(state_name)
@@ -242,11 +250,11 @@ async def get_city(
     state_name: str,
     city_name: str,
     request: Request,
-    api_key: str = Depends(verify_api_key)
+    api_key: Optional[str] = Depends(verify_api_key)
 ):
     """Get city details."""
     # Check rate limit for this specific API key
-    await check_api_rate_limit(request, api_key)
+    await check_api_rate_limit(api_key, request)
     
     data = get_postcode_data()
     city = data.get_city_in_state(state_name, city_name)
@@ -275,11 +283,11 @@ async def get_city(
 async def lookup_postcode(
     postcode: str,
     request: Request,
-    api_key: str = Depends(verify_api_key)
+    api_key: Optional[str] = Depends(verify_api_key)
 ):
     """Lookup location by postcode."""
     # Check rate limit for this specific API key
-    await check_api_rate_limit(request, api_key)
+    await check_api_rate_limit(api_key, request)
     
     data = get_postcode_data()
     result = data.lookup_postcode(postcode)
@@ -312,11 +320,11 @@ async def lookup_postcode(
 async def search(
     q: str,
     request: Request,
-    api_key: str = Depends(verify_api_key)
+    api_key: Optional[str] = Depends(verify_api_key)
 ):
     """Search for states or cities."""
     # Check rate limit for this specific API key
-    await check_api_rate_limit(request, api_key)
+    await check_api_rate_limit(api_key, request)
     
     if not q or len(q.strip()) < 2:
         raise HTTPException(

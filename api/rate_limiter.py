@@ -4,7 +4,7 @@ Custom rate limiting that supports per-API-key limits and IP-based limits.
 
 import time
 import os
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 from fastapi import HTTPException, Request, status
 from api.auth import get_api_key_manager
 
@@ -134,19 +134,16 @@ def get_rate_limiter() -> PerKeyRateLimiter:
     return _rate_limiter
 
 
-async def check_api_rate_limit(request: Request, api_key: str):
+async def check_api_rate_limit(api_key: Optional[str], request: Request):
     """Dependency to check rate limit for authenticated requests.
     
     Args:
+        api_key: Validated API key from auth dependency (None if auth is disabled)
         request: FastAPI request
-        api_key: Validated API key from auth dependency
         
     Raises:
         HTTPException: If rate limit is exceeded
     """
-    manager = get_api_key_manager()
-    rate_limit = manager.get_rate_limit(api_key)
-    
     limiter = get_rate_limiter()
     
     # Check IP-based rate limit first (applies to all requests)
@@ -155,8 +152,11 @@ async def check_api_rate_limit(request: Request, api_key: str):
         client_ip = request.client.host if request.client else '0.0.0.0'
         limiter.check_ip_rate_limit(client_ip, ip_limit)
     
-    # Then check API key-specific rate limit
-    limiter.check_rate_limit(api_key, rate_limit)
+    # Then check API key-specific rate limit (only if API key auth is enabled)
+    if api_key is not None:
+        manager = get_api_key_manager()
+        rate_limit = manager.get_rate_limit(api_key)
+        limiter.check_rate_limit(api_key, rate_limit)
 
 
 async def check_ip_rate_limit_only(request: Request):

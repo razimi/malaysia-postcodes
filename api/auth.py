@@ -140,18 +140,26 @@ def load_api_keys(keys_file: str = "api_keys.json"):
     _api_key_manager = APIKeyManager(keys_file)
 
 
-async def verify_api_key(api_key: str = Security(api_key_header)) -> str:
+async def verify_api_key(api_key: str = Security(api_key_header)) -> Optional[str]:
     """Verify API key from request header.
     
     Args:
         api_key: API key from X-API-Key header
         
     Returns:
-        The validated API key
+        The validated API key, or None if authentication is disabled
         
     Raises:
-        HTTPException: If API key is missing or invalid (401)
+        HTTPException: If API key is required but missing or invalid (401)
     """
+    # Check if API key authentication is required
+    require_api_key = os.getenv("REQUIRE_API_KEY", "true").lower() == "true"
+    
+    if not require_api_key:
+        # Authentication disabled, return None to indicate no API key
+        return None
+    
+    # Authentication required
     if not api_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
