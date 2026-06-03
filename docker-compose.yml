@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   api:
     build:
@@ -19,6 +17,7 @@ services:
       - API_KEYS_FILE=api_keys.json
       - DATA_FILE=all.json
       - RATE_LIMIT=100/minute
+      - IP_RATE_LIMIT=1000/hour
       - CORS_ORIGINS=*
     restart: unless-stopped
     healthcheck:

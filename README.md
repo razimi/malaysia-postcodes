@@ -165,12 +165,24 @@ API keys are stored in `api_keys.json` (not committed to git). Keep your API key
 
 ### Rate Limiting
 
-Each API key has its own configurable rate limit:
+The API implements **two layers** of rate limiting:
 
-- **Default Limit:** 100 requests per minute per API key
-- **Customizable:** Set different limits for different clients (e.g., 60/minute, 1000/minute, 10000/hour)
-- **Response:** HTTP 429 (Too Many Requests) when exceeded
-- **Retry-After:** Header indicates when to retry
+**1. Per-API-Key Rate Limiting**
+- Each API key has its own configurable limit
+- Default: 100 requests per minute per API key
+- Customizable per client (e.g., 60/minute, 1000/minute, 10000/hour)
+
+**2. IP-Based Rate Limiting**
+- Limits requests from each IP address
+- Default: 1,000 requests per hour per IP
+- Applies to all endpoints including public ones
+- Can be disabled by removing `IP_RATE_LIMIT` environment variable
+
+**Combined Behavior:**
+- Authenticated endpoints check **both** limits
+- Public endpoints (/, /health) only check IP limit
+- Response: HTTP 429 (Too Many Requests) when exceeded
+- Retry-After header indicates when to retry
 
 **Generate key with custom rate limit:**
 ```bash
@@ -182,6 +194,12 @@ python3 api/key_generator.py --name "Premium Client" --rate-limit "1000/minute"
 
 # Enterprise: 10,000 requests/hour
 python3 api/key_generator.py --name "Enterprise" --rate-limit "10000/hour"
+```
+
+**Configure IP rate limiting** in `docker-compose.yml`:
+```yaml
+environment:
+  - IP_RATE_LIMIT=1000/hour  # or set to empty to disable
 ```
 
 See [RATE_LIMITING.md](RATE_LIMITING.md) for detailed configuration guide.

@@ -21,7 +21,7 @@ from api.models import (
 )
 from api.data_loader import load_postcode_data, get_postcode_data
 from api.auth import load_api_keys, verify_api_key, get_api_key_identifier, get_api_key_manager
-from api.rate_limiter import check_api_rate_limit
+from api.rate_limiter import check_api_rate_limit, check_ip_rate_limit_only
 
 
 # Rate limiting setup
@@ -103,6 +103,9 @@ app.add_middleware(
 )
 async def root(request: Request):
     """Get API information."""
+    # Apply IP rate limiting to public endpoint
+    await check_ip_rate_limit_only(request)
+    
     return APIInfo(
         name="Malaysia Postcodes API",
         version=__version__,
@@ -118,8 +121,11 @@ async def root(request: Request):
     summary="Health Check",
     description="Check API health and data status"
 )
-async def health_check():
+async def health_check(request: Request):
     """Health check endpoint."""
+    # Apply IP rate limiting to public endpoint
+    await check_ip_rate_limit_only(request)
+    
     data = get_postcode_data()
     return HealthCheck(
         status="healthy",
