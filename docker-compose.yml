@@ -1,9 +1,9 @@
 services:
-  api:
+  postcodes-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: malaysia-postcodes-api
+    container_name: postcodes-api
     ports:
       - "8000:8000"
     volumes:
