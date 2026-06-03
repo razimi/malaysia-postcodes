@@ -134,6 +134,42 @@ def get_rate_limiter() -> PerKeyRateLimiter:
     return _rate_limiter
 
 
+def get_client_ip(request: Request) -> str:
+    """Extract real client IP from request, handling reverse proxy headers.
+    
+    Checks headers in order of preference:
+    1. CF-Connecting-IP (Cloudflare)
+    2. X-Real-IP (Nginx and other proxies)
+    3. X-Forwarded-For (Standard proxy header, takes first/leftmost IP)
+    4. request.client.host (Direct connection)
+    
+    Args:
+        request: FastAPI request object
+        
+    Returns:
+        Client IP address as string
+    """
+    # Cloudflare passes the real client IP in this header
+    cf_connecting_ip = request.headers.get("CF-Connecting-IP")
+    if cf_connecting_ip:
+        return cf_connecting_ip
+    
+    # Common reverse proxy header
+    x_real_ip = request.headers.get("X-Real-IP")
+    if x_real_ip:
+        return x_real_ip
+    
+    # Standard forwarded header - get the first (original client) IP
+    x_forwarded_for = request.headers.get("X-Forwarded-For")
+    if x_forwarded_for:
+        # X-Forwarded-For can be: "client, proxy1, proxy2"
+        # We want the leftmost (original client) IP
+        return x_forwarded_for.split(",")[0].strip()
+    
+    # Fallback to direct connection IP
+    return request.client.host if request.client else "0.0.0.0"
+
+
 async def check_api_rate_limit(api_key: Optional[str], request: Request):
     """Dependency to check rate limit for authenticated requests.
     
@@ -149,7 +185,7 @@ async def check_api_rate_limit(api_key: Optional[str], request: Request):
     # Check IP-based rate limit first (applies to all requests)
     ip_limit = os.getenv('IP_RATE_LIMIT', None)
     if ip_limit:
-        client_ip = request.client.host if request.client else '0.0.0.0'
+        client_ip = get_client_ip(request)
         limiter.check_ip_rate_limit(client_ip, ip_limit)
     
     # Then check API key-specific rate limit (only if API key auth is enabled)
@@ -169,7 +205,7 @@ async def check_ip_rate_limit_only(request: Request):
         HTTPException: If rate limit is exceeded
     """
     ip_limit = os.getenv('IP_RATE_LIMIT', '1000/hour')
-    client_ip = request.client.host if request.client else '0.0.0.0'
+    client_ip = get_client_ip(request)
     
     limiter = get_rate_limiter()
     limiter.check_ip_rate_limit(client_ip, ip_limit)

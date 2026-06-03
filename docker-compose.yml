@@ -14,6 +14,7 @@ services:
       - PORT=${PORT:-8000}
       - HOST=${HOST:-0.0.0.0}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_CLIENT_IP=${LOG_CLIENT_IP:-false}
       - API_KEYS_FILE=${API_KEYS_FILE:-api_keys.json}
       - DATA_FILE=${DATA_FILE:-all.json}
       - REQUIRE_API_KEY=${REQUIRE_API_KEY:-true}

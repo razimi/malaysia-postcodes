@@ -259,11 +259,43 @@ Environment variables (see `.env.example`):
 | `PORT` | 8000 | Server port |
 | `HOST` | 0.0.0.0 | Server host |
 | `LOG_LEVEL` | info | Logging level |
+| `LOG_CLIENT_IP` | false | Log real client IPs (for debugging proxies) |
 | `API_KEYS_FILE` | api_keys.json | Path to API keys file |
 | `REQUIRE_API_KEY` | true | Enable/disable API key authentication |
 | `RATE_LIMIT` | 100/minute | Default rate limit per API key |
 | `IP_RATE_LIMIT` | 1000/hour | IP-based rate limit (empty to disable) |
 | `CORS_ORIGINS` | * | Allowed CORS origins |
+
+### Reverse Proxy Setup
+
+The API automatically detects real client IPs when behind reverse proxies (Nginx, Cloudflare, etc.) by checking headers in this order:
+
+1. `CF-Connecting-IP` (Cloudflare)
+2. `X-Real-IP` (Nginx, common reverse proxies)
+3. `X-Forwarded-For` (Standard proxy header)
+4. Direct connection IP (fallback)
+
+**For Nginx Proxy Manager / Nginx:**
+
+Ensure your proxy passes the client IP headers:
+```nginx
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+```
+
+**For Cloudflare:**
+
+No additional configuration needed - Cloudflare automatically sets `CF-Connecting-IP`.
+
+**Debugging:**
+
+Enable client IP logging to verify correct IP detection:
+```bash
+# In .env file
+LOG_CLIENT_IP=true
+```
+
+This will log: `Request from real IP: x.x.x.x (via proxy: y.y.y.y) - GET /endpoint`
 
 ### Deployment
 

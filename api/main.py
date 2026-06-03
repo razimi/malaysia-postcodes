@@ -21,7 +21,7 @@ from api.models import (
 )
 from api.data_loader import load_postcode_data, get_postcode_data
 from api.auth import load_api_keys, verify_api_key, get_api_key_identifier, get_api_key_manager
-from api.rate_limiter import check_api_rate_limit, check_ip_rate_limit_only
+from api.rate_limiter import check_api_rate_limit, check_ip_rate_limit_only, get_client_ip
 
 
 # Rate limiting setup
@@ -87,6 +87,17 @@ async def remove_server_header(request: Request, call_next):
     """Remove server identification header for security."""
     response = await call_next(request)
     response.headers["Server"] = ""
+    return response
+
+# Optional middleware to log real client IPs (useful for debugging proxy issues)
+@app.middleware("http")
+async def log_client_ip(request: Request, call_next):
+    """Log real client IP for debugging proxy configurations."""
+    if os.getenv("LOG_CLIENT_IP", "false").lower() == "true":
+        client_ip = get_client_ip(request)
+        proxy_ip = request.client.host if request.client else "unknown"
+        print(f"Request from real IP: {client_ip} (via proxy: {proxy_ip}) - {request.method} {request.url.path}")
+    response = await call_next(request)
     return response
 
 # CORS middleware
